@@ -23,7 +23,7 @@ babel = Babel(app)
 @babel.localeselector
 def get_locale():
     """Determines best match for supported languages."""
-    return accept_languages.best_match(app.config['LANGUAGES'])
+    return request.accept_languages.best_match(app.config['LANGUAGES'])
 
 
 @app.route('/')
