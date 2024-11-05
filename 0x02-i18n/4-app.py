@@ -4,7 +4,7 @@ This module modifies get_locale function.
 """
 
 from flask import Flask, render_template, request
-from flask import Babel, _
+from flask_babel import Babel, _
 
 
 app = Flask(__name__)
@@ -23,7 +23,7 @@ class Config:
 app.config.from_object(Config)
 
 
-@babel.localselector
+@babel.localeselector
 def get_locale():
     locale - request.args.get('locale')
     if locale in app.config['LANGUAGES']:
