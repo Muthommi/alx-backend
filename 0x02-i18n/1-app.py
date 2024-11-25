@@ -4,7 +4,7 @@ Module sets up a flask app with basic Babel configuration.
 """
 
 from flask import Flask, render_template
-from flas_babel import Babel
+from flask_babel import Babel
 
 
 class Config:
