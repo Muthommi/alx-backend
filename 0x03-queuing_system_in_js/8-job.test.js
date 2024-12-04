@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import kue from 'kue';
 import createPushNotificationsJobs from './8-job.js';
+import sinon from 'sinon';
 
 describe('createPushNotificationsJobs', () => {
   let queue;
@@ -48,7 +49,7 @@ describe('createPushNotificationsJobs', () => {
 
     createPushNotificationsJobs(jobs, queue);
   
-    expect(consoleSpy.calledwithMatch(/Notification job created: \d+/)).to.be.true;
+    expect(consoleSpy.calledWithMatch(/Notification job created: \d+/)).to.be.true;
   
     consoleSpy.restore();
   });

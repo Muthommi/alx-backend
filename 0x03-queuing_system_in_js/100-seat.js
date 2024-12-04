@@ -7,8 +7,12 @@ const client = redis.createClient();
 const getAsync = promisify(client.get).bind(client);
 const setAsync = promisify(client.set).bind(client);
 
-async function reserveSeat(Number) {
-  await setAsync('available_seats', number);
+client.on('error', (err) => {
+  console.error('Redis Client Error', err);
+});
+
+async function reserveSeat(number) {
+  await setAsync('available_seats', number.toString());
 }
 
 async function getcurrentAvailableSeats() {
@@ -16,11 +20,10 @@ async function getcurrentAvailableSeats() {
   return seats ? parseInt(seats, 10) : 0;
 }
 
-reserveseat(50);
-let reserveationEnabled = true;
+reserveSeat(50);
 
+let reservationEnabled = true;
 const queue = kue.createQueue();
-
 const app = express();
 const port = 1245;
 
@@ -31,14 +34,15 @@ app.get('/available_seats', async (req, res) => {
 
 app.get('/reserve_seat', (req, res) => {
   if (!reservationEnabled) {
-    return res.status(400).json({ status: 'Reservation are blocked' });
+    return res.status(400).json({ status: 'Reservations are blocked' });
   }
 
-  const job = queue.create('reserve_seat').save((err) => {
+  const job = queue.create('reserve_seat');
+  job.save((err) => {
     if (err) {
       return res.status(500).json({ status: 'Reservation failed' });
     }
-    res.json({ status: 'Reservation in process' });
+    res.json({ status: 'Reservation in process', jobId: job.id });
   });
 
   job.on('complete', () => {
@@ -46,30 +50,34 @@ app.get('/reserve_seat', (req, res) => {
     
   job.on('failed', (errMsg) => {
     console.log(`Seat reservation job ${job.id} failed: ${errMsg}`);
-  )};
+  });
 });
 
 app.get('/process', (req, res) => {
   res.json({ status: 'Queue processing' });
 
-  queue.process('reserve_seat' async (job, done) => {
-    const currentSeats = await getCurrentAvailableSeats();
+  queue.process('reserve_seat', async (job, done) => {
+    try {
+      const currentSeats = await getCurrentAvailableSeats();
   
-    if (currentSeats > 0) {
-      await reserveSeat(currentSeats - 1);
-      const updatedSeats = await getCurrentAvailableSeats();
+      if (currentSeats > 0) {
+        await reserveSeat(currentSeats - 1);
+        const updatedSeats = await getCurrentAvailableSeats();
     
-      if (updatedSeats === 0) {
-        reservationEnabled = false;
+        if (updatedSeats === 0) {
+          reservationEnabled = false;
+        }
+    
+        done();
+      }else {
+        done(new Error('Not enough seats available'));
       }
-    
-      done();
-    }else {
-      done(new Error('Not enough seats available'));
+    } catch (error) {
+      done(error);
     }
   });
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port $(port)`);
+  console.log(`Server running on port ${port}`);
 });

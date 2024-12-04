@@ -19,7 +19,11 @@ function getItemById(id) {
 
 async function getCurrentReservedStockById(itemId) {
   const stock = await getAsync(`item.${itemId}`);
-  return Stock ? parseInt(stock, 10) : null;
+  return stock ? parseInt(stock, 10) : null;
+}
+
+async function reserveStockById(itemId, stock) {
+  await setAsync(`item.${itemId}`, stock);
 }
 
 listProducts.forEach((product) => {
